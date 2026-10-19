@@ -86,6 +86,10 @@ Only if you want a Start Menu / app launcher entry and `tv-cpp` on your PATH:
 sudo cmake --install build
 ```
 
+Install also refreshes the icon/desktop caches. If the launcher still shows an
+old (white-backed) icon, log out and back in — shells often keep icons cached
+in memory.
+
 Then you can open **TV** from your desktop menu, or run:
 
 ```bash

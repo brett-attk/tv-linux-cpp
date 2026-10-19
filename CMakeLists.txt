@@ -67,10 +67,24 @@ endforeach()
 install(FILES data/icons/tv-cpp.png
         DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps
         RENAME tv-cpp.png)
+# Required so gtk-update-icon-cache can refresh after install under /usr/local.
+install(FILES data/icons/hicolor-index.theme
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor
+        RENAME index.theme)
 configure_file(data/tv-cpp.desktop.in
                ${CMAKE_CURRENT_BINARY_DIR}/tv-cpp.desktop @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tv-cpp.desktop
         DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+install(CODE "
+  execute_process(
+    COMMAND gtk-update-icon-cache -f -t
+            \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/icons/hicolor\"
+    ERROR_QUIET OUTPUT_QUIET)
+  execute_process(
+    COMMAND update-desktop-database
+            \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/applications\"
+    ERROR_QUIET OUTPUT_QUIET)
+")
 
 enable_testing()
 add_subdirectory(tests)
