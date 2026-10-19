@@ -40,6 +40,25 @@ cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 run-clang-tidy -p build 'src/.*\.cpp'
 ```
 
+## Performance smoke
+
+Measures cold launch time, RSS (idle + playback), and mean mpv FPS under Xvfb
+with a synthetic local MPEG-TS stream (ffmpeg). Not part of default `ctest`.
+
+Dependencies: `ffmpeg`, `xvfb` (plus a Release/Debug build of `tv-cpp`).
+
+```bash
+sudo apt install ffmpeg xvfb   # once
+cmake --build build -j
+./scripts/perf_smoke.sh
+# or
+cmake --build build --target perf-smoke
+```
+
+Override thresholds with env vars if needed: `PERF_MAX_LAUNCH_MS`,
+`PERF_MAX_IDLE_RSS_KB`, `PERF_MAX_PLAY_RSS_KB`, `PERF_MIN_MEAN_FPS`,
+`PERF_MAX_DROP_DELTA`, `PERF_SAMPLE_SECS`.
+
 ## Pull requests
 
 1. Keep commits focused and messages imperative (“Add…”, “Fix…”)

@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "infra/app_icon.hpp"
 #include "infra/logging.hpp"
+#include "infra/perf.hpp"
 
 #include <clocale>
 #include <cstdlib>
@@ -12,6 +13,8 @@ int main(int argc, char** argv) {
   // libmpv requires the C numeric locale.
   setenv("LC_NUMERIC", "C", 1);
   setlocale(LC_NUMERIC, "C");
+
+  tv::perf::mark_start();
 
   const auto log_file = tv::setup_logging();
   tv::log_info("Starting tv-cpp (error log: " + log_file.string() + ")");

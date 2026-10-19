@@ -47,6 +47,11 @@ class MpvPlayer {
   bool toggle_fullscreen();
   void set_fullscreen_handler(FullscreenHandler handler);
 
+  /** Best-effort sync read of mpv estimated-vf-fps (0 if unavailable). */
+  double estimated_fps();
+  /** Best-effort sync read of mpv frame-drop-count (0 if unavailable). */
+  int64_t frame_drop_count();
+
   void shutdown();
 
  private:

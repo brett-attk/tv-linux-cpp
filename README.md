@@ -154,6 +154,19 @@ data/                   application icon and desktop entry
 tests/                  unit tests (no display required)
 ```
 
+## Performance smoke test
+
+Optional check for launch time, memory (RSS), and playback FPS under Xvfb
+(uses a local ffmpeg MPEG-TS test stream — no HDHomeRun needed):
+
+```bash
+sudo apt install ffmpeg xvfb
+./scripts/perf_smoke.sh
+```
+
+Or: `cmake --build build --target perf-smoke`. See [CONTRIBUTING.md](CONTRIBUTING.md)
+for thresholds and override env vars. This is **not** part of normal `ctest`.
+
 ## Troubleshooting
 
 | Problem | What to check |

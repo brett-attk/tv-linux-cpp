@@ -44,6 +44,7 @@ add_executable(tv-cpp
   src/view/import_dialog.cpp
   src/infra/theme.cpp
   src/infra/app_icon.cpp
+  src/infra/perf.cpp
 )
 target_include_directories(tv-cpp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(tv-cpp PRIVATE tv_core tv_player PkgConfig::GTKMM)
@@ -73,3 +74,14 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tv-cpp.desktop
 
 enable_testing()
 add_subdirectory(tests)
+
+# Optional performance smoke (skipped when ffmpeg/xvfb/binary are missing).
+add_custom_target(perf-smoke
+  COMMAND ${CMAKE_COMMAND} -E env
+          "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}"
+          bash "${CMAKE_SOURCE_DIR}/scripts/perf_smoke.sh"
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  DEPENDS tv-cpp
+  COMMENT "Running launch/RSS/FPS performance smoke under Xvfb"
+  USES_TERMINAL
+)

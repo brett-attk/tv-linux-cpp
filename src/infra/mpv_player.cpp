@@ -283,6 +283,60 @@ bool MpvPlayer::toggle_fullscreen() {
   return fullscreen_;
 }
 
+double MpvPlayer::estimated_fps() {
+  auto promise = std::make_shared<std::promise<double>>();
+  auto future = promise->get_future();
+  submit([this, promise] {
+    mpv_handle* player = nullptr;
+    {
+      std::lock_guard<std::mutex> lock(lock_);
+      player = player_;
+    }
+    double value = 0.0;
+    if (player &&
+        mpv_get_property(player, "estimated-vf-fps", MPV_FORMAT_DOUBLE,
+                         &value) < 0) {
+      value = 0.0;
+    }
+    try {
+      promise->set_value(value);
+    } catch (...) {
+    }
+  });
+  if (future.wait_for(std::chrono::milliseconds(200)) !=
+      std::future_status::ready) {
+    return 0.0;
+  }
+  return future.get();
+}
+
+int64_t MpvPlayer::frame_drop_count() {
+  auto promise = std::make_shared<std::promise<int64_t>>();
+  auto future = promise->get_future();
+  submit([this, promise] {
+    mpv_handle* player = nullptr;
+    {
+      std::lock_guard<std::mutex> lock(lock_);
+      player = player_;
+    }
+    int64_t value = 0;
+    if (player &&
+        mpv_get_property(player, "frame-drop-count", MPV_FORMAT_INT64,
+                         &value) < 0) {
+      value = 0;
+    }
+    try {
+      promise->set_value(value);
+    } catch (...) {
+    }
+  });
+  if (future.wait_for(std::chrono::milliseconds(200)) !=
+      std::future_status::ready) {
+    return 0;
+  }
+  return future.get();
+}
+
 void MpvPlayer::shutdown() {
   if (stopping_.exchange(true)) {
     return;

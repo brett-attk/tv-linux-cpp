@@ -1,6 +1,7 @@
 #include "presenter/main_presenter.hpp"
 
 #include "infra/logging.hpp"
+#include "infra/perf.hpp"
 #include "model/persist.hpp"
 #include "view/dialogs.hpp"
 #include "view/import_dialog.hpp"
@@ -37,7 +38,10 @@ MainPresenter::MainPresenter(MainWindow& window)
       sigc::mem_fun(*this, &MainPresenter::on_window_state));
 }
 
-MainPresenter::~MainPresenter() { player_.shutdown(); }
+MainPresenter::~MainPresenter() {
+  perf::shutdown();
+  player_.shutdown();
+}
 
 void MainPresenter::on_video_realize() {
   auto gdk_window = window_.video_area().get_window();
@@ -78,6 +82,21 @@ void MainPresenter::on_video_realize() {
   const auto channels = store_.list();
   if (!channels.empty()) {
     window_.channels().select(channels.front().id);
+  }
+
+  // Perf harness: report ready, optionally auto-play a synthetic stream URL.
+  perf::on_player_ready(player_);
+  if (perf::enabled()) {
+    const std::string url = perf::channel_url();
+    if (!url.empty()) {
+      Channel channel;
+      channel.id = "perf";
+      channel.name = "Perf";
+      channel.url = url;
+      play_channel(channel);
+    } else if (!channels.empty()) {
+      play_channel(channels.front());
+    }
   }
 }
 
