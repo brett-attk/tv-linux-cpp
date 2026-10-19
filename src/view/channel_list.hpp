@@ -4,6 +4,7 @@
 
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -50,6 +51,7 @@ class ChannelListPane : public Gtk::Box {
   std::optional<std::string> playing_id_;
   std::map<Gtk::ListBoxRow*, RowMeta> rows_;
   Gtk::ListBox list_box_;
+  std::unique_ptr<Gtk::Menu> context_menu_;
 };
 
 }  // namespace tv

@@ -160,7 +160,8 @@ Gtk::ListBoxRow* ChannelListPane::make_row(const Channel& channel) {
 }
 
 void ChannelListPane::popup_channel_menu() {
-  auto menu = std::make_unique<Gtk::Menu>();
+  // Replace any previous menu so we never leak Gtk::Menu instances.
+  context_menu_ = std::make_unique<Gtk::Menu>();
   auto* row = list_box_.get_selected_row();
   bool favorite = false;
   if (row) {
@@ -177,7 +178,7 @@ void ChannelListPane::popup_channel_menu() {
       on_toggle_favorite_();
     }
   });
-  menu->append(*fav_item);
+  context_menu_->append(*fav_item);
 
   auto* edit_item = Gtk::manage(new Gtk::MenuItem("Edit"));
   edit_item->signal_activate().connect([this] {
@@ -185,7 +186,7 @@ void ChannelListPane::popup_channel_menu() {
       on_edit_();
     }
   });
-  menu->append(*edit_item);
+  context_menu_->append(*edit_item);
 
   auto* remove_item = Gtk::manage(new Gtk::MenuItem("Remove"));
   remove_item->signal_activate().connect([this] {
@@ -193,11 +194,10 @@ void ChannelListPane::popup_channel_menu() {
       on_remove_();
     }
   });
-  menu->append(*remove_item);
+  context_menu_->append(*remove_item);
 
-  menu->show_all();
-  menu->popup_at_pointer(nullptr);
-  menu.release();  // owned by GTK while shown
+  context_menu_->show_all();
+  context_menu_->popup_at_pointer(nullptr);
 }
 
 void ChannelListPane::on_play_clicked(const std::string& channel_id) {

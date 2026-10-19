@@ -27,6 +27,19 @@ Add or extend headless tests under `tests/` for model/infra behavior
 (URL normalization, channel store, settings). UI and mpv do not need unit tests
 for routine changes.
 
+## Static analysis
+
+```bash
+# cppcheck (warnings that indicate real bugs)
+cppcheck --enable=warning,style,performance,portability --std=c++17 \
+  --inline-suppr --suppress=missingIncludeSystem --suppress=unusedFunction \
+  --suppress=useStlAlgorithm -I src src
+
+# Optional: clang-tidy (requires compile_commands.json from CMake)
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+run-clang-tidy -p build 'src/.*\.cpp'
+```
+
 ## Pull requests
 
 1. Keep commits focused and messages imperative (“Add…”, “Fix…”)

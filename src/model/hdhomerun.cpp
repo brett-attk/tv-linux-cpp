@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <memory>
 #include <sstream>
 
 #include <curl/curl.h>
@@ -225,27 +226,41 @@ std::string validate_fetch_url(const std::string& url,
 
 nlohmann::json http_get_json(const std::string& url, double timeout) {
   const std::string safe_url = validate_fetch_url(url);
-  CURL* curl = curl_easy_init();
+  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl(curl_easy_init(),
+                                                           &curl_easy_cleanup);
   if (!curl) {
     throw HdhrError("Could not initialize HTTP client.", true, url);
   }
   std::string body;
   long http_code = 0;
-  curl_easy_setopt(curl, CURLOPT_URL, safe_url.c_str());
-  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
-  curl_easy_setopt(curl, CURLOPT_USERAGENT, "tv-cpp/1.0");
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 0L);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &body);
-  struct curl_slist* headers = nullptr;
-  headers = curl_slist_append(headers, "Accept: application/json");
-  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+  curl_easy_setopt(curl.get(), CURLOPT_URL, safe_url.c_str());
+  curl_easy_setopt(curl.get(), CURLOPT_ACCEPT_ENCODING, "");
+  curl_easy_setopt(curl.get(), CURLOPT_USERAGENT, "tv-cpp/1.0");
+  curl_easy_setopt(curl.get(), CURLOPT_TIMEOUT, timeout);
+  curl_easy_setopt(curl.get(), CURLOPT_CONNECTTIMEOUT, timeout);
+  curl_easy_setopt(curl.get(), CURLOPT_FOLLOWLOCATION, 0L);
+  curl_easy_setopt(curl.get(), CURLOPT_NOSIGNAL, 1L);
+  // Defense in depth: only allow http(s) even if a future change weakens
+  // validate_fetch_url.
+#if LIBCURL_VERSION_NUM >= 0x075500
+  curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS_STR, "http,https");
+  curl_easy_setopt(curl.get(), CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+  curl_easy_setopt(curl.get(), CURLOPT_PROTOCOLS,
+                   static_cast<long>(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+  curl_easy_setopt(curl.get(), CURLOPT_REDIR_PROTOCOLS,
+                   static_cast<long>(CURLPROTO_HTTP | CURLPROTO_HTTPS));
+#endif
+  curl_easy_setopt(curl.get(), CURLOPT_WRITEFUNCTION, curl_write);
+  curl_easy_setopt(curl.get(), CURLOPT_WRITEDATA, &body);
 
-  const CURLcode rc = curl_easy_perform(curl);
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-  curl_slist_free_all(headers);
-  curl_easy_cleanup(curl);
+  std::unique_ptr<curl_slist, decltype(&curl_slist_free_all)> headers(
+      curl_slist_append(nullptr, "Accept: application/json"),
+      &curl_slist_free_all);
+  curl_easy_setopt(curl.get(), CURLOPT_HTTPHEADER, headers.get());
+
+  const CURLcode rc = curl_easy_perform(curl.get());
+  curl_easy_getinfo(curl.get(), CURLINFO_RESPONSE_CODE, &http_code);
 
   if (rc == CURLE_WRITE_ERROR && body.size() > kHdhrMaxResponseBytes) {
     log_error("Response from " + url + " exceeded max bytes");

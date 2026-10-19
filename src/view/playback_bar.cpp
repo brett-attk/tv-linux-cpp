@@ -72,8 +72,11 @@ void PlaybackBar::set_now_playing(const std::optional<std::string>& name) {
 
 void PlaybackBar::set_volume(int volume, bool muted) {
   char buf[32];
-  std::snprintf(buf, sizeof(buf), "Vol %3d%c", volume, muted ? 'M' : ' ');
-  volume_label_.set_text(buf);
+  const int n =
+      std::snprintf(buf, sizeof(buf), "Vol %3d%c", volume, muted ? 'M' : ' ');
+  if (n > 0) {
+    volume_label_.set_text(buf);
+  }
 }
 
 void PlaybackBar::set_muted(bool muted) {

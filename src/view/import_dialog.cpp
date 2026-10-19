@@ -2,12 +2,12 @@
 
 #include "infra/logging.hpp"
 
-#include <thread>
+#include <algorithm>
 
 namespace tv {
 
-HdhrImportDialog::HdhrImportDialog(Gtk::Window& parent,
-                                   const std::vector<std::string>& existing_urls)
+HdhrImportDialog::HdhrImportDialog(
+    Gtk::Window& parent, const std::vector<std::string>& existing_urls)
     : Gtk::Dialog("Import from HDHomeRun", parent, true),
       status_label_("", Gtk::ALIGN_START) {
   add_button("_Cancel", Gtk::RESPONSE_CANCEL);
@@ -70,10 +70,27 @@ HdhrImportDialog::HdhrImportDialog(Gtk::Window& parent,
   update_ok_sensitivity();
 }
 
-void HdhrImportDialog::on_destroyed() { closed_ = true; }
+HdhrImportDialog::~HdhrImportDialog() {
+  if (alive_) {
+    alive_->store(false);
+  }
+  join_fetch_thread();
+}
+
+void HdhrImportDialog::join_fetch_thread() {
+  if (fetch_thread_.joinable()) {
+    fetch_thread_.join();
+  }
+}
+
+void HdhrImportDialog::on_destroyed() {
+  if (alive_) {
+    alive_->store(false);
+  }
+}
 
 void HdhrImportDialog::on_fetch_clicked() {
-  if (fetching_ || closed_) {
+  if (fetching_ || !alive_ || !alive_->load()) {
     return;
   }
   const std::string url = url_entry_.get_text();
@@ -82,50 +99,48 @@ void HdhrImportDialog::on_fetch_clicked() {
     return;
   }
 
+  join_fetch_thread();
+
   fetching_ = true;
   fetch_btn_.set_sensitive(false);
   url_entry_.set_sensitive(false);
   status_label_.set_text("Fetching lineup…");
   clear_list();
 
-  std::thread([this, url] {
+  auto alive = alive_;
+  fetch_thread_ = std::thread([this, alive, url] {
     try {
       auto channels = fetch_lineup(url);
       Glib::signal_idle().connect_once(
-          [this, channels = std::move(channels)]() mutable {
-            idle_fetch_ok(std::move(channels));
+          [this, alive, channels = std::move(channels)]() mutable {
+            if (!alive || !alive->load()) {
+              return;
+            }
+            on_fetch_ok(channels);
           });
     } catch (const HdhrError& exc) {
       log_error(std::string("HDHomeRun import failed: ") + exc.what());
       const std::string message = exc.what();
-      Glib::signal_idle().connect_once(
-          [this, message] { idle_fetch_failed(message); });
+      Glib::signal_idle().connect_once([this, alive, message] {
+        if (!alive || !alive->load()) {
+          return;
+        }
+        on_fetch_failed(message);
+      });
     } catch (const std::exception& exc) {
       log_exception(std::string("Unexpected HDHomeRun import failure: ") +
                     exc.what());
       const std::string message =
           std::string("Unexpected error: ") + exc.what() + ". See " +
           log_path().string();
-      Glib::signal_idle().connect_once(
-          [this, message] { idle_fetch_failed(message); });
+      Glib::signal_idle().connect_once([this, alive, message] {
+        if (!alive || !alive->load()) {
+          return;
+        }
+        on_fetch_failed(message);
+      });
     }
-  }).detach();
-}
-
-bool HdhrImportDialog::idle_fetch_failed(const std::string& message) {
-  apply_if_open(closed_, [this, &message] {
-    on_fetch_failed(message);
-    return true;
   });
-  return false;
-}
-
-bool HdhrImportDialog::idle_fetch_ok(std::vector<HdhrChannel> channels) {
-  apply_if_open(closed_, [this, &channels] {
-    on_fetch_ok(channels);
-    return true;
-  });
-  return false;
 }
 
 void HdhrImportDialog::on_fetch_failed(const std::string& message) {
@@ -144,12 +159,9 @@ void HdhrImportDialog::on_fetch_ok(const std::vector<HdhrChannel>& channels) {
   url_entry_.set_sensitive(true);
   channels_ = channels;
   populate_list();
-  int already = 0;
-  for (const auto& c : channels_) {
-    if (existing_urls_.count(c.url)) {
-      ++already;
-    }
-  }
+  const int already = static_cast<int>(std::count_if(
+      channels_.begin(), channels_.end(),
+      [this](const HdhrChannel& c) { return existing_urls_.count(c.url) > 0; }));
   std::string status =
       "Found " + std::to_string(channels_.size()) + " channel(s)";
   if (already) {

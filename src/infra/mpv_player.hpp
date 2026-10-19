@@ -23,7 +23,10 @@ class MpvPlayer {
   MpvPlayer(const MpvPlayer&) = delete;
   MpvPlayer& operator=(const MpvPlayer&) = delete;
 
-  bool ready() const { return player_ != nullptr; }
+  bool ready() const {
+    std::lock_guard<std::mutex> lock(lock_);
+    return player_ != nullptr;
+  }
 
   void attach(int64_t wid);
   void play(const std::string& url);
@@ -65,7 +68,7 @@ class MpvPlayer {
   bool fullscreen_ = false;
   bool osc_enabled_ = true;
 
-  std::mutex lock_;
+  mutable std::mutex lock_;
   std::optional<std::string> media_url_;
   int media_gen_ = 0;
 
