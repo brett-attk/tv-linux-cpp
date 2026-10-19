@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
-project(tv-cpp VERSION 0.1.0 LANGUAGES CXX)
+
+# Single source of truth for the app version (also shown in Settings → About).
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" TV_CPP_VERSION_FILE)
+string(STRIP "${TV_CPP_VERSION_FILE}" TV_CPP_VERSION_FILE)
+project(tv-cpp VERSION ${TV_CPP_VERSION_FILE} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

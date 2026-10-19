@@ -112,14 +112,24 @@ bool confirm_remove(Gtk::Window& parent, const std::string& channel_name) {
 }
 
 void show_about(Gtk::Window& parent) {
+  static constexpr const char* kRepoUrl =
+      "https://github.com/brett-attk/tv-linux-cpp";
+
   Gtk::AboutDialog dialog;
   dialog.set_transient_for(parent);
   dialog.set_modal(true);
   dialog.set_program_name("TV");
+#ifndef TV_CPP_VERSION
+#define TV_CPP_VERSION "0.0.0-dev"
+#endif
   dialog.set_version(TV_CPP_VERSION);
-  dialog.set_comments("GTK television front-end with embedded mpv playback.");
-  dialog.set_website("https://github.com/brett-attk/tv-linux-cpp");
-  dialog.set_website_label("GitHub repository");
+  dialog.set_comments(
+      Glib::ustring(
+          "GTK television front-end with embedded mpv playback.\n"
+          "Source and releases: ") +
+      kRepoUrl);
+  dialog.set_website(kRepoUrl);
+  dialog.set_website_label("github.com/brett-attk/tv-linux-cpp");
   dialog.set_license_type(Gtk::LICENSE_MIT_X11);
   dialog.set_copyright("Licensed under the MIT License");
   if (auto icon = load_app_icon(128)) {

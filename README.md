@@ -3,6 +3,10 @@
 GTK 3 + libmpv television front-end for Linux. Plays HDHomeRun-style HTTP
 MPEG-TS streams (for example `http://192.168.1.27:5004/auto/v2.1`).
 
+**Version:** see [`VERSION`](VERSION) (current: **0.1.0**). Shown in the app under
+**Settings → About**, which also links to this repository:
+https://github.com/brett-attk/tv-linux-cpp
+
 Licensed under the [MIT License](LICENSE).
 
 ## Features
