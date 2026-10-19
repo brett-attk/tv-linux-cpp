@@ -1,68 +1,116 @@
-# tv-linux-cpp
+# TV (C++)
 
-GTK 3 (gtkmm) + libmpv television front-end for Linux. Plays HDHomeRun-style
-HTTP MPEG-TS streams (for example `http://192.168.1.27:5004/auto/v2.1`).
+GTK 3 + libmpv television front-end for Linux. Plays HDHomeRun-style HTTP
+MPEG-TS streams (for example `http://192.168.1.27:5004/auto/v2.1`).
 
-Native C++ binary with an MVP architecture. Licensed under the [MIT License](LICENSE).
+Licensed under the [MIT License](LICENSE).
 
 ## Features
 
-- Channel list with friendly names; right-click for Favorite / Edit / Remove
-- Favorites sort to the top and show a heart icon
-- Add channels manually or import from an HDHomeRun device lineup
-- Embedded mpv video pane
-- Prev / Next, volume, mute, fullscreen, OSC toggle (persisted)
-- Local-only persistence under XDG paths (nothing is shipped in the repo)
+- Left pane: channel list with friendly names; right-click for Favorite / Edit / Remove
+- Favorites sort to the top of the list and show a heart icon
+- Settings menu: add a channel or import from an HDHomeRun device lineup
+- Right pane: embedded mpv video
+- Channel Prev / Next, volume, mute, fullscreen
+- Local-only persistence under XDG paths (see [Where data is stored](#where-data-is-stored))
 
-## Requirements
+## Setup and install (Debian/Ubuntu)
 
-| Dependency | Debian/Ubuntu package |
-|------------|------------------------|
-| CMake ≥ 3.16, C++17 compiler | `cmake` `g++` `pkg-config` |
-| gtkmm 3 | `libgtkmm-3.0-dev` |
-| libmpv | `libmpv-dev` (runtime: `libmpv2`) |
-| libcurl | `libcurl4-openssl-dev` |
-| nlohmann/json | `nlohmann-json3-dev` |
+Do these steps once, from a terminal.
 
-Video embedding uses X11 window ids. On Wayland, launch with `GDK_BACKEND=x11`
-(or use `./run.sh`).
-
-## Quick start
+### 1. Get the code
 
 ```bash
 git clone https://github.com/brett-attk/tv-linux-cpp.git
 cd tv-linux-cpp
+```
 
+### 2. Install system packages
+
+```bash
 sudo apt update
 sudo apt install cmake g++ pkg-config libgtkmm-3.0-dev libmpv-dev \
   libcurl4-openssl-dev nlohmann-json3-dev
+```
 
+These provide the C++ compiler, GTK 3 UI toolkit, libmpv (video), libcurl
+(network), and JSON support.
+
+### 3. Build the app
+
+From the project directory (`tv-linux-cpp`):
+
+```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-ctest --test-dir build --output-on-failure
+```
 
+This creates the binary at `build/tv-cpp`.
+
+Optional — run the unit tests:
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+### 4. Run the app
+
+```bash
 ./run.sh
 ```
 
-On first launch the channel list is empty. Use **Settings → Add Channel…** or
-**Settings → Import from HDHomeRun…**.
+`run.sh` starts the app with X11 embedding enabled (needed for video on Wayland).
 
-### Optional system install
+On first launch the channel list is empty. Add channels with
+**Settings → Add Channel…** or **Settings → Import from HDHomeRun…**.
+Your list is saved only on this machine (see [Where data is stored](#where-data-is-stored)).
+
+**Later launches:** from the project directory, run `./run.sh` again
+(no reinstall needed).
+
+**Alternative launch** (same as `./run.sh`):
+
+```bash
+GDK_BACKEND=x11 ./build/tv-cpp
+```
+
+### 5. Optional: install system-wide
+
+Only if you want a Start Menu / app launcher entry and `tv-cpp` on your PATH:
 
 ```bash
 sudo cmake --install build
 ```
 
-This installs the `tv-cpp` binary, hicolor icons, and a desktop entry
-(`tv-cpp.desktop`).
-
-## Run
+Then you can open **TV** from your desktop menu, or run:
 
 ```bash
-./run.sh
-# or
-GDK_BACKEND=x11 ./build/tv-cpp
+GDK_BACKEND=x11 tv-cpp
 ```
+
+## Where data is stored
+
+Nothing from your channel list is shipped in the git repo. On first launch the
+app creates the config directory and empty files as needed.
+
+| What | File | Notes |
+|------|------|--------|
+| **Channel list + favorites** | `~/.config/tv-cpp/channels.json` | Updated when you add, edit, remove, import, or favorite a channel |
+| **App settings** (e.g. OSC on/off) | `~/.config/tv-cpp/settings.json` | Preferences that survive restarts |
+| **Error log** | `~/.local/state/tv-cpp/error.log` | Rotating log for import/network and other failures |
+
+```bash
+# Inspect your channel list
+less ~/.config/tv-cpp/channels.json
+
+# Inspect settings
+less ~/.config/tv-cpp/settings.json
+
+# Inspect the error log
+less ~/.local/state/tv-cpp/error.log
+```
+
+To relocate storage, set `XDG_CONFIG_HOME` and/or `XDG_STATE_HOME` before launching.
 
 ## Controls
 
@@ -70,8 +118,9 @@ GDK_BACKEND=x11 ./build/tv-cpp
 |--------|----|------|
 | Play / Stop | Play icon on selected row | — |
 | Add channel | Settings → Add Channel… | — |
-| Import HDHomeRun | Settings → Import from HDHomeRun… | — |
+| About | Settings → About | — |
 | Favorite / Edit / Remove | Right-click channel | — |
+| Import HDHomeRun | Settings → Import from HDHomeRun… | — |
 | Previous / next | Prev / Next | Page Up / Page Down |
 | Volume | Vol − / Vol + | `-` / `+` |
 | Mute | Mute | `m` |
@@ -80,39 +129,12 @@ GDK_BACKEND=x11 ./build/tv-cpp
 
 ### HDHomeRun import
 
-1. **Settings → Import from HDHomeRun…**
-2. Enter the device address (`192.168.1.27`, `http://hdhomerun.local`, or a full `lineup.json` URL)
-3. **Fetch** → select channels → **Add selected**
+1. Open **Settings → Import from HDHomeRun…**
+2. Enter the device address (examples: `192.168.1.27`, `http://hdhomerun.local`, or `http://192.168.1.27/lineup.json`)
+3. Click **Fetch** to load the lineup
+4. Check the channels to add, then **Add selected**
 
 Channels already in your list (same stream URL) are marked and skipped.
-
-## Where data is stored
-
-Nothing from your channel list is committed to git. On first launch the app
-creates config/state files as needed.
-
-| What | Path |
-|------|------|
-| Channel list + favorites | `~/.config/tv-cpp/channels.json` |
-| App settings (OSC) | `~/.config/tv-cpp/settings.json` |
-| Error log | `~/.local/state/tv-cpp/error.log` |
-
-Override with `XDG_CONFIG_HOME` / `XDG_STATE_HOME` if needed.
-
-Example `channels.json`:
-
-```json
-{
-  "channels": [
-    {
-      "id": "...",
-      "name": "Channel 2.1",
-      "url": "http://192.168.1.27:5004/auto/v2.1",
-      "favorite": false
-    }
-  ]
-}
-```
 
 ## Project layout
 
@@ -124,28 +146,23 @@ src/
   model/                channels, settings, HDHomeRun client
   view/                 gtkmm widgets and dialogs
   infra/                paths, logging, mpv player, theme, icons
-data/
-  icons/                application icon (tv-cpp)
-  tv-cpp.desktop.in     desktop entry template
-tests/                  unit tests (no display / no libmpv required)
-```
-
-## Tests
-
-```bash
-ctest --test-dir build --output-on-failure
-# or
-./build/tests/tv_core_tests
+data/                   application icon and desktop entry
+tests/                  unit tests (no display required)
 ```
 
 ## Troubleshooting
 
 | Problem | What to check |
 |---------|----------------|
-| Missing gtkmm / mpv / curl / json | Install the packages under [Requirements](#requirements) |
+| `cmake` or package not found | Re-run step 2 (install system packages) |
+| Build errors about gtkmm / mpv / curl / json | Same — install the packages in step 2, then rebuild (step 3) |
 | Black video / no picture | Launch with `./run.sh` (forces X11). Plain Wayland without X11 embedding will not work |
-| Import / network errors | See `~/.local/state/tv-cpp/error.log` |
-| Icon missing when running from `build/` | Rebuild so `TV_CPP_ICON_DIR` points at `data/icons`, or install |
+| Import / network errors | Details are written to `~/.local/state/tv-cpp/error.log` |
+
+```bash
+# View the error log
+less ~/.local/state/tv-cpp/error.log
+```
 
 ## License
 
