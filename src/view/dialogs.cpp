@@ -118,7 +118,7 @@ void show_about(Gtk::Window& parent) {
   dialog.set_program_name("TV");
   dialog.set_version(TV_CPP_VERSION);
   dialog.set_comments("GTK television front-end with embedded mpv playback.");
-  dialog.set_website("https://github.com/brett-attk/linux-tv-cpp");
+  dialog.set_website("https://github.com/brett-attk/tv-linux-cpp");
   dialog.set_website_label("GitHub repository");
   dialog.set_license_type(Gtk::LICENSE_MIT_X11);
   dialog.set_copyright("Licensed under the MIT License");

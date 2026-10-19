@@ -1,4 +1,4 @@
-# linux-tv-cpp
+# tv-linux-cpp
 
 GTK 3 (gtkmm) + libmpv television front-end for Linux. Plays HDHomeRun-style
 HTTP MPEG-TS streams (for example `http://192.168.1.27:5004/auto/v2.1`).
@@ -30,8 +30,8 @@ Video embedding uses X11 window ids. On Wayland, launch with `GDK_BACKEND=x11`
 ## Quick start
 
 ```bash
-git clone https://github.com/brett-attk/linux-tv-cpp.git
-cd linux-tv-cpp
+git clone https://github.com/brett-attk/tv-linux-cpp.git
+cd tv-linux-cpp
 
 sudo apt update
 sudo apt install cmake g++ pkg-config libgtkmm-3.0-dev libmpv-dev \
