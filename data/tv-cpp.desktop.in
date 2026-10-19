@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=TV
+GenericName=Television
+Comment=GTK television front-end with embedded mpv playback
+Exec=tv-cpp
+Icon=tv-cpp
+Terminal=false
+Categories=AudioVideo;TV;Player;
+StartupNotify=true
+StartupWMClass=tv-cpp
